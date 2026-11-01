@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!-- ##ext1  External student form page (prototype). Host-neutral: nothing here is tied to GitHub. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Wellbeing Check-in</title>
+<style>
+  :root{
+    --bg:#0D1117; --surface:#161B22; --surface2:#21262D; --border:#30363D;
+    --text1:#F0F6FC; --text2:#8B949E; --text3:#484F58; --accent:#3D8FE8; --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 60px;}
+  .hdr{width:100%;max-width:600px;text-align:center;margin-bottom:28px;padding-top:12px;}
+  .hdr-school{font-size:22px;font-weight:700;letter-spacing:-0.3px;color:var(--accent);margin-bottom:4px;}
+  .hdr-sub{font-size:13px;color:var(--text2);line-height:1.5;}
+  .prog-wrap{width:100%;max-width:600px;margin-bottom:24px;}
+  .prog-label{font-size:11px;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;}
+  .prog-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+  .prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s ease;width:0%;}
+  .form-wrap{width:100%;max-width:600px;display:flex;flex-direction:column;gap:16px;}
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 20px 16px;transition:border-color .2s;}
+  .q-card.answered{border-color:var(--accent);}
+  .q-num{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;letter-spacing:.5px;}
+  .q-text{font-size:15px;font-weight:500;line-height:1.5;color:var(--text1);margin-bottom:16px;}
+  .options{display:flex;flex-direction:column;gap:8px;}
+  .opt-label{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border:1px solid var(--border);border-radius:8px;cursor:pointer;
+             transition:background .15s,border-color .15s;line-height:1.4;}
+  .opt-label:hover{background:var(--surface2);border-color:var(--text3);}
+  .opt-label.selected{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:var(--accent);}
+  .opt-label input[type=radio]{appearance:none;-webkit-appearance:none;width:17px;height:17px;min-width:17px;border:2px solid var(--border);
+             border-radius:50%;margin-top:1px;transition:border-color .15s,background .15s;position:relative;flex-shrink:0;}
+  .opt-label input[type=radio]:checked{border-color:var(--accent);background:radial-gradient(circle, var(--accent) 45%, transparent 50%);}
+  .opt-text{font-size:14px;color:var(--text1);}
+  .submit-wrap{width:100%;max-width:600px;margin-top:16px;}
+  .submit-note{font-size:12px;color:var(--text2);text-align:center;margin-bottom:14px;}
+  .submit-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;
+              transition:opacity .15s,transform .1s;letter-spacing:.2px;}
+  .submit-btn:hover:not(:disabled){opacity:.9;transform:translateY(-1px);}
+  .submit-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .inline-err{display:none;margin-bottom:12px;padding:12px 14px;border:1px solid #F85149;border-radius:8px;
+              background:color-mix(in srgb,#F85149 12%,transparent);font-size:13px;line-height:1.5;color:var(--text1);}
+  .state-box{width:100%;max-width:600px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px 24px;
+             text-align:center;display:none;flex-direction:column;align-items:center;gap:16px;}
+  .state-box.active{display:flex;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .state-icon{font-size:48px;line-height:1;}
+  .state-title{font-size:20px;font-weight:700;color:var(--text1);}
+  .state-body{font-size:14px;color:var(--text2);line-height:1.6;max-width:440px;}
+  .err-box{background:color-mix(in srgb,#F85149 12%,transparent);border-color:#F85149;}
+  #debug{display:none;width:100%;max-width:600px;margin-top:24px;padding:12px;border:1px dashed var(--text3);border-radius:8px;
+         font:11px/1.5 monospace;color:var(--text2);white-space:pre-wrap;word-break:break-all;}
+</style>
+</head>
+<body>
+
+<div class="state-box active" id="state-loading">
+  <div class="spinner"></div>
+  <div class="state-body">Loading your questions…</div>
+</div>
+
+<div class="state-box err-box" id="state-error">
+  <div class="state-icon">⚠️</div>
+  <div class="state-title">Oops</div>
+  <div class="state-body" id="err-msg">Something went wrong.</div>
+</div>
+
+<div class="state-box" id="state-success">
+  <div class="state-icon">✅</div>
+  <div class="state-title">Thank you!</div>
+  <div class="state-body">Your responses have been submitted. You can close this page.</div>
+</div>
+
+<noscript><div class="state-box err-box active"><div class="state-body">This page needs JavaScript turned on to work.</div></div></noscript>
+
+<div id="form-root" style="display:none;width:100%;max-width:600px;flex-direction:column;align-items:center;">
+  <div class="hdr">
+    <img id="school-logo" src="" alt="" style="display:none;max-height:64px;max-width:200px;margin-bottom:12px;object-fit:contain;border-radius:6px">
+    <div class="hdr-school" id="school-name">Wellbeing Check-in</div>
+    <div class="hdr-sub" id="school-sub">Your answers are anonymous and help us support you better.</div>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-label"><span id="prog-text">0 of 0 answered</span><span id="prog-pct">0%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+  <div class="form-wrap" id="questions-wrap"></div>
+  <div class="submit-wrap">
+    <div class="inline-err" id="inline-err"></div>
+    <div class="submit-note">Please answer all questions before submitting.</div>
+    <button class="submit-btn" id="submit-btn" disabled>Submit</button>
+  </div>
+</div>
+
+<div id="debug"></div>
+
+<script>
+'use strict';
+// Link format:  <this page>?s=<school deployment id>&year=7      (add &debug=1 to see technical details)
+var PAGE_VERSION = 'ext1';
+var qs = new URLSearchParams(location.search);
+var DEPLOY_ID = (qs.get('s') || '').trim();
+var YEAR      = (qs.get('year') || '').trim();
+var DEBUG     = qs.get('debug') === '1';
+var ENDPOINT  = 'https://script.google.com/macros/s/' + DEPLOY_ID + '/exec';
+var formData  = null;
+
+function dbg(msg) {
+  if (!DEBUG) return;
+  var el = document.getElementById('debug');
+  el.style.display = 'block';
+  el.textContent += new Date().toISOString().slice(11, 23) + '  ' + msg + '\n';
+}
+
+function showState(id) {
+  ['state-loading', 'state-error', 'state-success'].forEach(function (s) { document.getElementById(s).classList.remove('active'); });
+  document.getElementById('form-root').style.display = 'none';
+  if (id === 'form') document.getElementById('form-root').style.display = 'flex';
+  else document.getElementById(id).classList.add('active');
+}
+function fatal(msg) { document.getElementById('err-msg').textContent = msg; showState('state-error'); }
+
+// One call to the school's script. Sends NO cookies, so no Google account is involved.
+// Resolves to the parsed JSON reply; rejects with an Error whose message is plain English.
+function callScript(payload) {
+  var started = Date.now();
+  dbg('POST ' + payload.action + ' -> ' + ENDPOINT.replace(DEPLOY_ID, DEPLOY_ID.slice(0, 8) + '…'));
+  return fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // keeps it a "simple request": no CORS pre-check
+    body: JSON.stringify(payload),
+    redirect: 'follow',
+    credentials: 'omit'
+  }).then(function (res) {
+    dbg('HTTP ' + res.status + ' after ' + (Date.now() - started) + ' ms, final host ' + (res.url ? new URL(res.url).host : '?'));
+    return res.text().then(function (text) {
+      var data;
+      try { data = JSON.parse(text); }
+      catch (e) {
+        dbg('Reply was not JSON. First 200 chars: ' + text.slice(0, 200).replace(/\s+/g, ' '));
+        throw new Error('The school\u2019s form service sent back something unexpected. This usually means the service has not been updated yet or is not set to allow everyone. Please tell your teacher.');
+      }
+      return data;
+    });
+  }, function (err) {
+    dbg('Network error: ' + err);
+    throw new Error('Could not reach the school\u2019s form service. Check the internet connection. If this is a school device, the school filter may be blocking script.google.com or script.googleusercontent.com. Please tell your teacher.');
+  });
+}
+
+function setAccent(c) { if (/^#[0-9a-fA-F]{3,8}$/.test(c || '')) document.documentElement.style.setProperty('--accent', c); }
+function isHttps(u) { return /^https:\/\//i.test(u || ''); }
+
+function updateProgress() {
+  var total = formData.questions.length;
+  var answered = document.querySelectorAll('.q-card.answered').length;
+  var pct = total ? Math.round((answered / total) * 100) : 0;
+  document.getElementById('prog-text').textContent = answered + ' of ' + total + ' answered';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('submit-btn').disabled = answered < total;
+}
+
+function buildForm(data) {
+  formData = data;
+  var b = data.branding || {};
+  document.getElementById('school-name').textContent = b.schoolName || 'Wellbeing Check-in';
+  document.getElementById('school-sub').textContent = b.subtitle || '';
+  document.title = b.schoolName || 'Wellbeing Check-in';
+  setAccent(b.accentColor);
+  if (isHttps(b.logoUrl)) { var lg = document.getElementById('school-logo'); lg.src = b.logoUrl; lg.style.display = 'block'; }
+  if (isHttps(b.backgroundUrl)) {
+    document.body.style.backgroundImage = 'url("' + b.backgroundUrl.replace(/"/g, '%22') + '")';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+  var wrap = document.getElementById('questions-wrap');
+  wrap.innerHTML = '';
+  data.questions.forEach(function (q, qi) {
+    var card = document.createElement('div'); card.className = 'q-card';
+    var numEl = document.createElement('div'); numEl.className = 'q-num'; numEl.textContent = 'QUESTION ' + (qi + 1) + ' OF ' + data.questions.length;
+    var textEl = document.createElement('div'); textEl.className = 'q-text'; textEl.textContent = q.text;
+    var opts = document.createElement('div'); opts.className = 'options';
+    q.options.forEach(function (opt) {
+      var lbl = document.createElement('label'); lbl.className = 'opt-label';
+      var inp = document.createElement('input'); inp.type = 'radio'; inp.name = 'q' + qi; inp.value = opt;
+      inp.addEventListener('change', function () {
+        card.querySelectorAll('.opt-label').forEach(function (l) { l.classList.remove('selected'); });
+        lbl.classList.add('selected'); card.classList.add('answered'); updateProgress();
+      });
+      var txt = document.createElement('span'); txt.className = 'opt-text'; txt.textContent = opt;
+      lbl.appendChild(inp); lbl.appendChild(txt); opts.appendChild(lbl);
+    });
+    card.appendChild(numEl); card.appendChild(textEl); card.appendChild(opts); wrap.appendChild(card);
+  });
+  updateProgress();
+  showState('form');
+}
+
+document.getElementById('submit-btn').addEventListener('click', function () {
+  var btn = document.getElementById('submit-btn');
+  var errBox = document.getElementById('inline-err');
+  errBox.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Submitting…';
+  var answers = formData.questions.map(function (q, qi) {
+    var sel = document.querySelector('input[name="q' + qi + '"]:checked');
+    return { question: q.text, answer: sel ? sel.value : '' };
+  });
+  callScript({ action: 'submit', year: YEAR, slot: formData.slot, answers: answers }).then(function (res) {
+    if (res && res.success) { showState('state-success'); return; }
+    throw new Error((res && res.error) || 'Submission failed.');
+  }).catch(function (err) {
+    errBox.textContent = err.message + ' Your answers are still on this page, so you can press Submit to try again.';
+    errBox.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Submit';
+  });
+});
+
+window.addEventListener('load', function () {
+  dbg('page ' + PAGE_VERSION + ', year=' + YEAR + ', school code ' + (DEPLOY_ID ? DEPLOY_ID.slice(0, 8) + '…' : '(missing)'));
+  if (!/^[A-Za-z0-9_-]{20,200}$/.test(DEPLOY_ID)) { fatal('This link is missing or has a bad school code. Please ask your teacher for the correct link.'); return; }
+  if (!/^(7|8|9|10|11|12|13)$/.test(YEAR)) { fatal('This link is missing a valid year group. Please ask your teacher for the correct link.'); return; }
+  callScript({ action: 'form', year: Number(YEAR) }).then(function (res) {
+    if (res && res.success) { buildForm(res); return; }
+    fatal((res && res.error) || 'Could not load the questions.');
+  }).catch(function (err) { fatal(err.message); });
+});
+</script>
+</body>
+</html>
